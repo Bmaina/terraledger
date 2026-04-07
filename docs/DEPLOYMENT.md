@@ -11,7 +11,7 @@ git add .
 git commit -m "feat: TerraLedger MVP — EUDR compliance platform with GeoAI scoring"
 
 # Create repo on GitHub (via CLI or web), then:
-git remote add origin https://github.com/YOUR\_USERNAME/terraledger.git
+git remote add origin https://github.com/Bmaina/TerraLedger.git
 git branch -M main
 git push -u origin main
 ```
