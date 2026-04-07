@@ -48,3 +48,8 @@ coverage.xml
 
 # Alembic versions (keep structure, ignore generated)
 # backend/alembic/versions/*.py
+
+
+# Added by cargo
+
+/target
