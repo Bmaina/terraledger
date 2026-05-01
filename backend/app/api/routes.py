@@ -9,37 +9,40 @@ router = APIRouter()
 
 
 # ─────────────────────────────────────────────
-# HEALTH CHECK
+# HEALTH CHECK (NO DB DEPENDENCY)
 # ─────────────────────────────────────────────
 @router.get("/health")
 def health():
-    return {"status": "ok", "service": "TerraLedger"}
+    return {
+        "status": "ok",
+        "service": "TerraLedger"
+    }
 
 
 # ─────────────────────────────────────────────
-# AUTH (SIMPLE MVP - NOT PRODUCTION SAFE)
+# AUTH (MVP - NOT SECURE FOR PRODUCTION)
 # ─────────────────────────────────────────────
 @router.post("/auth/register")
 def register(email: str, password: str, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == email).first()
 
-    if existing:
+    if user:
         raise HTTPException(status_code=400, detail="User already exists")
 
-    user = User(
+    new_user = User(
         email=email,
-        hashed_password=password,  # ⚠️ replace with hashing in production
+        hashed_password=password,  # ⚠️ hash in production
         organisation="default",
         country="KE",
     )
 
-    db.add(user)
+    db.add(new_user)
     db.commit()
-    db.refresh(user)
+    db.refresh(new_user)
 
     return {
-        "id": user.id,
-        "email": user.email
+        "id": new_user.id,
+        "email": new_user.email
     }
 
 
