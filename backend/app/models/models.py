@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Float, DateTime, Text, ForeignKey, Integer, JSON, Boolean
+from sqlalchemy import Column, String, Float, DateTime, Text, ForeignKey, JSON, Boolean
 from sqlalchemy.orm import relationship
-from app.core.database import Base
+
+from app.core.database import Base   # keep ONLY if this exists in your repo
 
 
 def gen_uuid():
@@ -15,8 +16,8 @@ class User(Base):
     id = Column(String, primary_key=True, default=gen_uuid)
     email = Column(String, unique=True, nullable=False, index=True)
     hashed_password = Column(String, nullable=False)
-    organisation = Column(String, nullable=True)
-    country = Column(String, nullable=True)
+    organisation = Column(String)
+    country = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     parcels = relationship("Parcel", back_populates="owner")
@@ -24,39 +25,34 @@ class User(Base):
 
 
 class Parcel(Base):
-    """A farm parcel — the core unit of EUDR compliance."""
     __tablename__ = "parcels"
 
     id = Column(String, primary_key=True, default=gen_uuid)
     owner_id = Column(String, ForeignKey("users.id"), nullable=False)
 
-    # Identity
     name = Column(String, nullable=False)
-    farmer_name = Column(String, nullable=True)
-    cooperative = Column(String, nullable=True)
-    commodity = Column(String, nullable=False)  # coffee, cocoa, timber, rubber, soy
+    farmer_name = Column(String)
+    cooperative = Column(String)
+    commodity = Column(String, nullable=False)
     country = Column(String, nullable=False)
-    region = Column(String, nullable=True)
+    region = Column(String)
 
-    # Geospatial — stored as GeoJSON string
     geojson = Column(Text, nullable=False)
     centroid_lat = Column(Float, nullable=False)
     centroid_lon = Column(Float, nullable=False)
-    area_ha = Column(Float, nullable=True)
+    area_ha = Column(Float)
 
-    # Satellite scoring
-    ndvi_baseline_2020 = Column(Float, nullable=True)    # NDVI score at Dec 2020 baseline
-    ndvi_latest = Column(Float, nullable=True)           # Most recent NDVI score
-    ndvi_delta = Column(Float, nullable=True)            # Change since baseline
-    deforestation_score = Column(Float, nullable=True)   # 0-100, higher = more risk
-    confidence = Column(Float, nullable=True)            # 0-1 confidence interval
-    risk_level = Column(String, nullable=True)           # LOW / MEDIUM / HIGH
-    satellite_last_checked = Column(DateTime, nullable=True)
-    xai_explanation = Column(Text, nullable=True)        # Human-readable AI explanation
+    ndvi_baseline_2020 = Column(Float)
+    ndvi_latest = Column(Float)
+    ndvi_delta = Column(Float)
+    deforestation_score = Column(Float)
+    confidence = Column(Float)
+    risk_level = Column(String)
+    satellite_last_checked = Column(DateTime)
+    xai_explanation = Column(Text)
 
-    # Status
-    eudr_compliant = Column(Boolean, nullable=True)
-    verified_at = Column(DateTime, nullable=True)
+    eudr_compliant = Column(Boolean)
+    verified_at = Column(DateTime)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -66,29 +62,25 @@ class Parcel(Base):
 
 
 class CommodityBatch(Base):
-    """A traceable lot of commodity — linked to verified parcels."""
     __tablename__ = "commodity_batches"
 
     id = Column(String, primary_key=True, default=gen_uuid)
     owner_id = Column(String, ForeignKey("users.id"), nullable=False)
 
-    # Identity
-    batch_code = Column(String, unique=True, nullable=False, index=True)
-    commodity = Column(String, nullable=False)
-    quantity_kg = Column(Float, nullable=False)
-    harvest_date = Column(DateTime, nullable=False)
-    export_date = Column(DateTime, nullable=True)
-    destination_country = Column(String, nullable=True)
+    batch_code = Column(String, unique=True, index=True)
+    commodity = Column(String)
+    quantity_kg = Column(Float)
+    harvest_date = Column(DateTime)
+    export_date = Column(DateTime)
+    destination_country = Column(String)
 
-    # Processing
-    washing_station = Column(String, nullable=True)
-    exporter_name = Column(String, nullable=True)
-    importer_name = Column(String, nullable=True)
+    washing_station = Column(String)
+    exporter_name = Column(String)
+    importer_name = Column(String)
 
-    # Compliance
-    all_parcels_compliant = Column(Boolean, nullable=True)
+    all_parcels_compliant = Column(Boolean)
     dds_generated = Column(Boolean, default=False)
-    dds_reference = Column(String, nullable=True)
+    dds_reference = Column(String)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -98,32 +90,32 @@ class CommodityBatch(Base):
 
 
 class BatchParcel(Base):
-    """Many-to-many link: a batch can span multiple parcels."""
     __tablename__ = "batch_parcels"
 
     id = Column(String, primary_key=True, default=gen_uuid)
-    batch_id = Column(String, ForeignKey("commodity_batches.id"), nullable=False)
-    parcel_id = Column(String, ForeignKey("parcels.id"), nullable=False)
-    weight_from_parcel_kg = Column(Float, nullable=True)
+    batch_id = Column(String, ForeignKey("commodity_batches.id"))
+    parcel_id = Column(String, ForeignKey("parcels.id"))
+    weight_from_parcel_kg = Column(Float)
 
     batch = relationship("CommodityBatch", back_populates="batch_parcels")
     parcel = relationship("Parcel", back_populates="batch_parcels")
 
 
 class CustodyEvent(Base):
-    """Immutable audit trail — every time a batch changes hands or location."""
     __tablename__ = "custody_events"
 
     id = Column(String, primary_key=True, default=gen_uuid)
-    batch_id = Column(String, ForeignKey("commodity_batches.id"), nullable=False)
+    batch_id = Column(String, ForeignKey("commodity_batches.id"))
 
-    event_type = Column(String, nullable=False)  # HARVEST, TRANSPORT, PROCESS, EXPORT, IMPORT
-    event_timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
-    location_name = Column(String, nullable=True)
-    gps_lat = Column(Float, nullable=True)
-    gps_lon = Column(Float, nullable=True)
-    actor_name = Column(String, nullable=True)
-    notes = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    event_type = Column(String)
+    event_timestamp = Column(DateTime, default=datetime.utcnow)
+    location_name = Column(String)
+    gps_lat = Column(Float)
+    gps_lon = Column(Float)
+    actor_name = Column(String)
+    notes = Column(Text)
+
+    # FIXED RESERVED NAME
+    event_metadata = Column(JSON)
 
     batch = relationship("CommodityBatch", back_populates="custody_events")
